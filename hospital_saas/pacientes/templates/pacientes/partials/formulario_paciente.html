@@ -1,0 +1,154 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-6" 
+     x-data="{ isSubmitting: false }"
+     @htmx:before-request="isSubmitting = true"
+     @htmx:after-request="isSubmitting = false; $dispatch('close-form')">
+
+    <h2 class="text-xl font-bold mb-4 text-gray-800">
+        {% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} Paciente
+    </h2>
+    
+    <form method="post"
+          hx-post="{% if form.instance.pk %}{% url 'editar_paciente' form.instance.pk %}{% else %}{% url 'crear_paciente' %}{% endif %}"
+          hx-target="#lista-pacientes"
+          hx-swap="outerHTML"
+          @submit.prevent="">
+
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Nombre -->
+            <div>
+                <label class="label" for="id_nombre">
+                    <span class="label-text font-medium">Nombre</span>
+                    <span class="text-error">*</span>
+                </label>
+                <input type="text" name="nombre" id="id_nombre" 
+                       class="input input-bordered w-full"
+                       value="{{ form.nombre.value|default_if_none:'' }}"
+                       required>
+                {% if form.nombre.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.nombre.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Apellido -->
+            <div>
+                <label class="label" for="id_apellido">
+                    <span class="label-text font-medium">Apellido</span>
+                    <span class="text-error">*</span>
+                </label>
+                <input type="text" name="apellido" id="id_apellido" 
+                       class="input input-bordered w-full"
+                       value="{{ form.apellido.value|default_if_none:'' }}"
+                       required>
+                {% if form.apellido.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.apellido.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Cédula -->
+            <div>
+                <label class="label" for="id_cedula">
+                    <span class="label-text font-medium">Cédula/RUT</span>
+                    <span class="text-error">*</span>
+                </label>
+                <input type="text" name="cedula" id="id_cedula" 
+                       class="input input-bordered w-full"
+                       value="{{ form.cedula.value|default_if_none:'' }}"
+                       required>
+                {% if form.cedula.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.cedula.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Fecha de Nacimiento -->
+            <div>
+                <label class="label" for="id_fecha_nacimiento">
+                    <span class="label-text font-medium">Fecha Nacimiento</span>
+                    <span class="text-error">*</span>
+                </label>
+                <input type="date" name="fecha_nacimiento" id="id_fecha_nacimiento" 
+                       class="input input-bordered w-full"
+                       value="{{ form.fecha_nacimiento.value|date:'Y-m-d'|default_if_none:'' }}"
+                       required>
+                {% if form.fecha_nacimiento.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.fecha_nacimiento.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Alergias -->
+            <div class="md:col-span-2">
+                <label class="label" for="id_alergias">
+                    <span class="label-text font-medium">Alergias conocidas</span>
+                    <span class="label-text-alt text-gray-500">(Opcional)</span>
+                </label>
+                <textarea name="alergias" id="id_alergias" 
+                          class="textarea textarea-bordered w-full h-24"
+                          >{{ form.alergias.value|default_if_none:'' }}</textarea>
+                {% if form.alergias.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.alergias.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Antecedentes Médicos -->
+            <div class="md:col-span-2">
+                <label class="label" for="id_antecedentes">
+                    <span class="label-text font-medium">Antecedentes Médicos</span>
+                    <span class="label-text-alt text-gray-500">(Opcional)</span>
+                </label>
+                <textarea name="antecedentes" id="id_antecedentes" 
+                          class="textarea textarea-bordered w-full h-24"
+                          >{{ form.antecedentes.value|default_if_none:'' }}</textarea>
+                {% if form.antecedentes.errors %}
+                <div class="text-error text-sm mt-1 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    {{ form.antecedentes.errors|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-6">
+            <button type="button" 
+                    @click="$dispatch('close-form')"
+                    class="btn btn-ghost hover:bg-gray-100"
+                    :disabled="isSubmitting">
+                Cancelar
+            </button>
+            <button type="submit" 
+                    class="btn btn-primary"
+                    :class="{ 'loading': isSubmitting }"
+                    :disabled="isSubmitting">
+                <span x-show="!isSubmitting">Guardar</span>
+                <span x-show="isSubmitting">Guardando...</span>
+            </button>
+        </div>
+    </form>
+</div>

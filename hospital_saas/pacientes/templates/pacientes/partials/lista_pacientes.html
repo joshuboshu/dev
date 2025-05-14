@@ -1,0 +1,21 @@
+<table>
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for paciente in pacientes %}
+        <tr>
+            <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
+            <td>
+                <a hx-get="{% url 'editar_paciente' paciente.id %}"
+                   hx-target="#formulario-container">Editar</a>
+                <a hx-post="{% url 'eliminar_paciente' paciente.id %}"
+                   hx-confirm="¿Eliminar este paciente?">Eliminar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

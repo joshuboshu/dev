@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div x-data="{ openForm: false }"
+     @close-form.window="openForm = false">
+
+    <h1 class="text-2xl font-bold mb-4">Lista de Pacientes</h1>
+    <button @click="openForm = true"
+            class="btn btn-primary mb-4">
+        + Nuevo Paciente
+    </button>
+    
+    <div x-show="openForm" x-transition>
+        {% include "pacientes/partials/formulario_paciente.html" %}
+    </div>
+    
+    <div id="lista-pacientes">
+        {% include "pacientes/partials/lista_pacientes.html" %}
+    </div>
+</div>
+{% endblock %}
