@@ -1,51 +1,59 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse
 from .models import Paciente
 from .forms import PacienteForm
 import json
 
+class LoginRequiredHTMXMixin(LoginRequiredMixin):
+    """
+    Mixin para manejar redirecciones en peticiones HTMX cuando el usuario no está autenticado
+    """
+    def handle_no_permission(self):
+        if self.request.htmx:
+            return HttpResponse(
+                status=204,
+                headers={
+                    'HX-Redirect': reverse('login_medico')
+                }
+            )
+        return super().handle_no_permission()
+
+def check_htmx_auth(view_func):
+    """
+    Decorator para manejar autenticación en vistas HTMX
+    """
+    def wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            if request.htmx:
+                return HttpResponse(
+                    status=204,
+                    headers={
+                        'HX-Redirect': reverse('login_medico')
+                    }
+                )
+            return redirect('login_medico')
+        return view_func(request, *args, **kwargs)
+    return wrapped_view
+
+@check_htmx_auth
 def lista_pacientes(request):
     """
     Display a list of all registered patients.
-    
-    Handles both full page requests and HTMX partial requests. When accessed via HTMX,
-    returns only the patient list partial template for dynamic updates.
-
-    Args:
-        request (HttpRequest): The incoming request object. Checks for HTMX headers.
-
-    Returns:
-        HttpResponse: 
-            - If HTMX request: Renders 'pacientes/partials/lista_pacientes.html'
-            - If normal request: Renders 'pacientes/lista_pacientes.html'
-            
-    Context:
-        pacientes (QuerySet): All patient objects ordered by creation date.
+    Redirige al login si el usuario no está autenticado.
     """
-    pacientes = Paciente.objects.all()
+    pacientes = Paciente.objects.filter(creado_por=request.user)  # Solo pacientes del médico actual
     if request.htmx:
         return render(request, 'pacientes/partials/lista_pacientes.html', {'pacientes': pacientes})
     return render(request, 'pacientes/lista_pacientes.html', {'pacientes': pacientes})
 
+@check_htmx_auth
 def crear_paciente(request):
     """
     Handle patient creation through HTMX form submission.
-    
-    Processes both initial form display (GET) and form submission (POST). Validates form data
-    and returns appropriate responses for both success and error cases.
-
-    Args:
-        request (HttpRequest): The incoming request object.
-
-    Returns:
-        HttpResponse:
-            - GET: Displays empty patient form
-            - POST (valid): Returns 204 with HTMX triggers
-            - POST (invalid): Returns form with errors (status 400)
-            
-    HTMX Triggers:
-        pacienteActualizado: Triggered on successful creation
-        showMessage: Contains success notification message
+    Redirige al login si el usuario no está autenticado.
     """
     if request.method == 'POST':
         form = PacienteForm(request.POST)
@@ -62,40 +70,21 @@ def crear_paciente(request):
                     })
                 }
             )
-        else:
-            # Devuelve solo los campos con errores para ahorrar ancho de banda
-            return render(request, 'pacientes/partials/formulario_paciente.html', {
-                'form': form
-            }, status=400)
+        return render(request, 'pacientes/partials/formulario_paciente.html', 
+                    {'form': form}, status=400)
 
     form = PacienteForm()
-    return render(request, 'pacientes/partials/formulario_paciente.html', {'form': form})
+    return render(request, 'pacientes/partials/formulario_paciente.html', 
+                {'form': form})
 
+@check_htmx_auth
 def editar_paciente(request, pk):
     """
     Handle patient editing through HTMX form submission.
-    
-    Retrieves an existing patient and processes form updates. Handles validation
-    and returns appropriate responses for both success and error cases.
-
-    Args:
-        request (HttpRequest): The incoming request object.
-        pk (int): Primary key of the patient to edit.
-
-    Returns:
-        HttpResponse:
-            - GET: Displays form pre-populated with patient data
-            - POST (valid): Returns 204 with HTMX triggers
-            - POST (invalid): Returns form with errors (status 400)
-            
-    Raises:
-        Http404: If no patient exists with the given pk.
-        
-    HTMX Triggers:
-        pacienteActualizado: Triggered on successful update
-        showMessage: Contains success notification message
+    Redirige al login si el usuario no está autenticado.
     """
-    paciente = get_object_or_404(Paciente, pk=pk)
+    paciente = get_object_or_404(Paciente, pk=pk, creado_por=request.user)  # Solo permite editar pacientes propios
+    
     if request.method == 'POST':
         form = PacienteForm(request.POST, instance=paciente)
         if form.is_valid():
@@ -109,39 +98,27 @@ def editar_paciente(request, pk):
                     })
                 }
             )
-        else:
-            return render(request, 'pacientes/partials/formulario_paciente.html', {
-                'form': form
-            }, status=400)
+        return render(request, 'pacientes/partials/formulario_paciente.html', 
+                    {'form': form}, status=400)
 
     form = PacienteForm(instance=paciente)
-    return render(request, 'pacientes/partials/formulario_paciente.html', {'form': form})
+    return render(request, 'pacientes/partials/formulario_paciente.html', 
+                {'form': form})
 
+@check_htmx_auth
 def eliminar_paciente(request, pk):
     """
     Handle patient deletion through HTMX request.
-    
-    Deletes the specified patient and triggers list refresh. Designed to work
-    with HTMX-powered interfaces.
-
-    Args:
-        request (HttpRequest): The incoming request object.
-        pk (int): Primary key of the patient to delete.
-
-    Returns:
-        HttpResponse: HTTP 204 response with HTMX trigger
-        
-    Raises:
-        Http404: If no patient exists with the given pk.
-        
-    HTMX Triggers:
-        pacienteActualizado: Triggered after successful deletion
+    Redirige al login si el usuario no está autenticado.
     """
-    paciente = get_object_or_404(Paciente, pk=pk)
+    paciente = get_object_or_404(Paciente, pk=pk, creado_por=request.user)  # Solo permite eliminar pacientes propios
     paciente.delete()
     return HttpResponse(
         status=204,
         headers={
-            'HX-Trigger': 'pacienteActualizado'
+            'HX-Trigger': json.dumps({
+                'pacienteActualizado': True,
+                'showMessage': 'Paciente eliminado exitosamente'
+            })
         }
     )
